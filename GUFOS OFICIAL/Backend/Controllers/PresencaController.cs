@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Backend.Models;
+using Backend.Domains;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Backend.Repositories;
 
 namespace Backend.Controllers
 {
@@ -13,13 +14,15 @@ namespace Backend.Controllers
     public class PresencaController : ControllerBase
     {
         
-        GufosContext _contexto = new GufosContext();
+        //GufosContext _contexto = new GufosContext();
+
+        PresencaRepository _contexto = new PresencaRepository();
 
         // GET: api/Presenca
         [HttpGet]
         public async Task<ActionResult<List<Presenca>>>Get(){
 
-            var presencas = await _contexto.Presenca.ToListAsync();
+            var presencas = await _contexto.Listar();
 
             if (presencas == null){
                 return NotFound();
@@ -33,7 +36,7 @@ namespace Backend.Controllers
         public async Task<ActionResult<Presenca>>Get(int id){
 
             //  FindAsync = procura algo específico no banco 
-            var presenca = await _contexto.Presenca.FindAsync(id);
+            var presenca = await _contexto.BuscarPorID(id);
 
             if (presenca == null){
                 return NotFound();
@@ -48,9 +51,8 @@ namespace Backend.Controllers
 
             try{
                 // Tratamos contra ataques de SQL Injection
-                await _contexto.AddAsync(presenca);
+                await _contexto.Salvar(presenca);
                 // Salvamos efetivamente o nosso objeto no banco de dados
-                await _contexto.SaveChangesAsync();
             }catch(DbUpdateConcurrencyException){
                 throw;
             }
@@ -64,24 +66,26 @@ namespace Backend.Controllers
 
             //Se o Id do objeto não existir 
             //ele retorna erro 400
-            if(id != presenca.PresencaId){
+            if(id != presenca.PresencaId)
+            {
                 return BadRequest();
             }
 
-            // comparamos os atributos que foram mdeficados através do EF
-            _contexto.Entry(presenca).State = EntityState . Modified;
-
-
-            try{
-                await _contexto.SaveChangesAsync();
-            }catch(DbUpdateConcurrencyException){
+            try
+            {
+                await _contexto.Alterar(presenca);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
 
                 //Verificamos se o objeto inserido realmente existe no banco
-                var presenca_valido = await _contexto.Presenca.FindAsync(id);
+                var presenca_valido = await _contexto.BuscarPorID(id);
 
-                if(presenca_valido == null){
+                if(presenca_valido == null)
+                {
                     return NotFound();
-                }else{
+                }else
+                {
                     throw;
                 }
             }
@@ -96,13 +100,12 @@ namespace Backend.Controllers
 
         public async Task<ActionResult<Presenca>> Delete(int id){
 
-            var presenca = await _contexto.Presenca.FindAsync(id);
+            var presenca = await _contexto.BuscarPorID(id);
             if(presenca == null){
                 return NotFound();
             }
 
-            _contexto.Presenca.Remove(presenca);
-            await _contexto.SaveChangesAsync();
+            await _contexto.Excluir(presenca);
 
             return presenca;
         }

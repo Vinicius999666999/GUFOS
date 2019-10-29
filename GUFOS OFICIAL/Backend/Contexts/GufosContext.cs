@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Threading.Tasks;
+using Backend.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace Backend.Models
+namespace Backend.Domains
 {
     public partial class GufosContext : DbContext
     {
@@ -15,10 +17,21 @@ namespace Backend.Models
         {
         }
 
+        internal Task SaveChargesAsync()
+        {
+            throw new NotImplementedException();
+        }
+
         public virtual DbSet<Categoria> Categoria { get; set; }
         public virtual DbSet<Evento> Evento { get; set; }
         public virtual DbSet<Localizacao> Localizacao { get; set; }
         public virtual DbSet<Presenca> Presenca { get; set; }
+
+        internal Task Listar()
+        {
+            throw new NotImplementedException();
+        }
+
         public virtual DbSet<TipoUsuario> TipoUsuario { get; set; }
         public virtual DbSet<Usuario> Usuario { get; set; }
 
@@ -26,6 +39,7 @@ namespace Backend.Models
         {
             if (!optionsBuilder.IsConfigured)
             {
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
                 optionsBuilder.UseSqlServer("Server=N-1S-DEV-04\\SQLEXPRESS; Database=Gufos; User Id=sa; Password=132");
             }
         }
@@ -119,5 +133,10 @@ namespace Backend.Models
         }
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
+        public static implicit operator GufosContext(LocalizacaoRepository v)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

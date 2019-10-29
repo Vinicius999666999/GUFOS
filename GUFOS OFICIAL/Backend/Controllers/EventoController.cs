@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Backend.Models;
+using Backend.Domains;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Backend.Repositories;
 
 //para adicionar a árvore de objeto adicionamos uma nova biblioteca JSON
 // dotnet add package Microsoft.AspNetCore.Mvc.NewtonsoftJson
@@ -16,14 +17,16 @@ namespace Backend.Controllers
     public class EventoController : ControllerBase
     {
         
-        GufosContext _contexto = new GufosContext();
+        //GufosContext _contexto = new GufosContext();
+
+        EventoRepository _contexto = new EventoRepository();
 
         // GET: api/Evento
         [HttpGet]
-        public async Task<ActionResult<List<Evento>>>Get(){
+        public async Task<ActionResult<List<Evento>>> Get(){
 
             //Include("") = Adiciona efetivamente a árvore de objetos 
-            var eventos = await _contexto.Evento.ToListAsync();
+            var eventos = await _contexto.Listar();
 
             if (eventos == null){
                 return NotFound();
@@ -34,10 +37,10 @@ namespace Backend.Controllers
 
         // GET: api/Evento/2
         [HttpGet("{id}")]
-        public async Task<ActionResult<Evento>>Get(int id){
+        public async Task<ActionResult<Evento>> Get(int id){
 
             //  FindAsync = procura algo específico no banco 
-            var evento = await _contexto.Evento.FindAsync(id);
+            Evento evento = await _contexto.BuscarPorID(id);
 
             if (evento == null){
                 return NotFound();
@@ -51,10 +54,9 @@ namespace Backend.Controllers
         public async Task<ActionResult<Evento>> Post(Evento evento){
 
             try{
-                // Tratamos contra ataques de SQL Injection
-                await _contexto.AddAsync(evento);
-                // Salvamos efetivamente o nosso objeto no banco de dados
-                await _contexto.SaveChangesAsync();
+              
+                await _contexto.Salvar(evento);
+
             }catch(DbUpdateConcurrencyException){
                 throw;
             }
@@ -72,16 +74,12 @@ namespace Backend.Controllers
                 return BadRequest();
             }
 
-            // comparamos os atributos que foram mdeficados através do EF
-            _contexto.Entry(evento).State = EntityState . Modified;
-
-
             try{
-                await _contexto.SaveChangesAsync();
+                await _contexto.Alterar(evento);
             }catch(DbUpdateConcurrencyException){
 
                 //Verificamos se o objeto inserido realmente existe no banco
-                var evento_valido = await _contexto.Evento.FindAsync(id);
+                var evento_valido = await _contexto.BuscarPorID(id);
 
                 if(evento_valido == null){
                     return NotFound();
@@ -100,13 +98,12 @@ namespace Backend.Controllers
 
         public async Task<ActionResult<Evento>> Delete(int id){
 
-            var evento = await _contexto.Evento.FindAsync(id);
+            var evento = await _contexto.BuscarPorID(id);
             if(evento == null){
                 return NotFound();
             }
 
-            _contexto.Evento.Remove(evento);
-            await _contexto.SaveChangesAsync();
+            await _contexto.Excluir(evento);
 
             return evento;
         }

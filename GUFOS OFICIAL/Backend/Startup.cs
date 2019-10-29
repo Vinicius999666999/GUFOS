@@ -15,6 +15,9 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using System.Reflection;
 using System.IO;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Text;
 
 
 //Instalamos o Entity Framework
@@ -33,12 +36,17 @@ using System.IO;
 // dotnet EF
 
 //Códig que criará o nosso Contexto da Base de Dados e nossos Models
-// dotnet ef dbcontext scaffold "Server=N-1S-DEV-04\SQLEXPRESS; Database=Gufos; User Id=sa; Password=132" Microsoft.EntityFrameWorkCore.SqlServer -o Models -d
+// dotnet ef dbcontext scaffold "Server=N-1S-DEV-04\SQLEXPRESS; Database=Gufos; User Id=sa; Password=132" Microsoft.EntityFrameWorkCore.SqlServer -o Domains -d
 
 // SWAGGER - Documentação
 
 //Instalamos o pacote
 // dotnet add Backend.csproj package Swashbuckle.AspNetcore -v 5.0.0-rc4
+
+// JWT - JSON WEB Token
+
+//Adicionamos o pacote JWT
+// dotnet add package Microspft.AspNetCore.Authentication.JwtBaerer --version 3.0.0 
 
 
 namespace Backend
@@ -71,6 +79,19 @@ namespace Backend
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
             });
+            
+            //Configuramos o JWT
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer( options =>{
+                options.TokenValidationParameters = new TokenValidationParameters{
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = Configuration["Jwt:Issuer"],
+                    ValidAudience = Configuration["Jwt:Issuer"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["Jwt:Key"]))
+                };                
+            });
 
         }
 
@@ -88,6 +109,10 @@ namespace Backend
             app.UseSwaggerUI(c =>{
                 c.SwaggerEndpoint("/swagger/v1/swagger.json","API V1");
             });
+            
+
+            //Usamos efetivamente a autenticação
+            app.UseAuthentication();
 
             app.UseHttpsRedirection();
 

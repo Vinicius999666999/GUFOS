@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Backend.Models;
+using Backend.Domains;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Backend.Repositories;
 
 //para adicionar a árvore de objeto adicionamos uma nova biblioteca JSON
 // dotnet add package Microsoft.AspNetCore.Mvc.NewtonsoftJson
@@ -16,14 +17,16 @@ namespace Backend.Controllers
     public class TipoUsuarioController : ControllerBase
     {
         
-        GufosContext _contexto = new GufosContext();
+        //GufosContext _contexto = new GufosContext();
+
+        TipoUsuarioRepository _contexto = new TipoUsuarioRepository();
 
         // GET: api/TipoUsuario
         [HttpGet]
-        public async Task<ActionResult<List<TipoUsuario>>>Get(){
+        public async Task<ActionResult<List<TipoUsuario>>> Get(){
 
             //Include("") = Adiciona efetivamente a árvore de objetos 
-            var tipousuario = await _contexto.TipoUsuario.ToListAsync();
+            var tipousuario = await _contexto.Listar();
 
             if (tipousuario == null){
                 return NotFound();
@@ -34,10 +37,10 @@ namespace Backend.Controllers
 
         // GET: api/TipoUsuario/2
         [HttpGet("{id}")]
-        public async Task<ActionResult<TipoUsuario>>Get(int id){
+        public async Task<ActionResult<TipoUsuario>> Get(int id){
 
             //  FindAsync = procura algo específico no banco 
-            var tipousuario = await _contexto.TipoUsuario.FindAsync(id);
+            var tipousuario = await _contexto.BuscarPorID(id);
 
             if (tipousuario == null){
                 return NotFound();
@@ -52,14 +55,12 @@ namespace Backend.Controllers
 
             try{
                 // Tratamos contra ataques de SQL Injection
-                await _contexto.AddAsync(tipousuario);
-                // Salvamos efetivamente o nosso objeto no banco de dados
-                await _contexto.SaveChangesAsync();
+                await _contexto.Salvar(tipousuario);
+
             }catch(DbUpdateConcurrencyException){
                 throw;
             }
-            
-            
+             
             return tipousuario;
         }
 
@@ -72,20 +73,20 @@ namespace Backend.Controllers
                 return BadRequest();
             }
 
-            // comparamos os atributos que foram mdeficados através do EF
-            _contexto.Entry(tipousuario).State = EntityState . Modified;
-
-
             try{
-                await _contexto.SaveChangesAsync();
-            }catch(DbUpdateConcurrencyException){
+                await _contexto.Alterar(tipousuario);
+            }
+            catch(DbUpdateConcurrencyException){
 
                 //Verificamos se o objeto inserido realmente existe no banco
-                var tipousuario_valido = await _contexto.TipoUsuario.FindAsync(id);
+                var tipousuario_valido = await _contexto.BuscarPorID(id);
 
-                if(tipousuario_valido == null){
+                if(tipousuario_valido == null)
+                {
                     return NotFound();
-                }else{
+                }
+                else
+                {
                     throw;
                 }
             }
@@ -100,13 +101,12 @@ namespace Backend.Controllers
 
         public async Task<ActionResult<TipoUsuario>> Delete(int id){
 
-            var tipousuario = await _contexto.TipoUsuario.FindAsync(id);
+            var tipousuario = await _contexto.BuscarPorID(id);
             if(tipousuario == null){
                 return NotFound();
             }
 
-            _contexto.TipoUsuario.Remove(tipousuario);
-            await _contexto.SaveChangesAsync();
+            await _contexto.Excluir(tipousuario);
 
             return tipousuario;
         }
